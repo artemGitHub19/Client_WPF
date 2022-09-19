@@ -144,7 +144,7 @@ namespace WpfApp1
                 bi.StreamSource = new MemoryStream(binaryData);
                 bi.EndInit();
 
-                WrapPanel wp = new WrapPanel() { Orientation = Orientation.Vertical, Margin = new Thickness(30, 30, 30, 30) };
+                WrapPanel wp = new WrapPanel() { Orientation = Orientation.Vertical, Margin = new Thickness(20, 20, 20, 0) };
 
                 WrapPanel wp1 = new WrapPanel() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 5), HorizontalAlignment = HorizontalAlignment.Right };
 
