@@ -46,7 +46,7 @@
         </WrapPanel>
 
         <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-            <Button x:Name="changeImage" Margin="0,0,15,0">Choose</Button>
+            <Button x:Name="ChooseImage" Margin="0,0,15,0">Choose</Button>
             <Button x:Name="okButton" Click="okButton_Click" IsDefault="True">OK</Button>
             <Button Name="cancelButton" IsCancel="True">Cancel</Button>
         </StackPanel>

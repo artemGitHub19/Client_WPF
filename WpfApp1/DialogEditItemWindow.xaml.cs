@@ -50,7 +50,7 @@ namespace WpfApp1
                 this.Title = "Create New Image";
             }
 
-            changeImage.Click += ChangeImage_Click;
+            ChooseImage.Click += ChooseImage_Click;
             
             var nameBindingObject = new Binding("Name");            
             nameBindingObject.Mode = BindingMode.TwoWay;
@@ -58,11 +58,8 @@ namespace WpfApp1
             BindingOperations.SetBinding(TextBoxName, TextBox.TextProperty, nameBindingObject);
         }
 
-        private void ChangeImage_Click(object sender, RoutedEventArgs e)
-        {
-
-            //MessageBox.Show(image.Name);
-
+        private void ChooseImage_Click(object sender, RoutedEventArgs e)
+        {           
             OpenFileDialog fileDialog = new OpenFileDialog();
             fileDialog.DefaultExt = ".jpg"; 
             fileDialog.Filter = " JPG |*.jpg"; 
@@ -74,11 +71,6 @@ namespace WpfApp1
                 string base64ImageRepresentation = Convert.ToBase64String(imageArray);
 
                 image.Content = base64ImageRepresentation;
-                //image.Name = fileDialog.SafeFileName;
-
-                //TextBoxName.Text = fileDialog.SafeFileName;
-
-                //fileName = fileDialog.SafeFileName;
 
                 byte[] binaryData = Convert.FromBase64String(image.Content);
 

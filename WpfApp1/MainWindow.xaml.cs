@@ -76,7 +76,7 @@ namespace WpfApp1
         private void EditButton_Click(object sender, RoutedEventArgs e)
         {
             Button button = (Button)sender;
-            string id = button.Name.ToString().Split("_")[1];            
+            string id = button.Uid;            
 
             MyImage? image = images.FirstOrDefault((item) => item.Id == id);
 
@@ -86,10 +86,7 @@ namespace WpfApp1
             if (result == true)
             {               
                 image = dialog.image;
-                if (String.IsNullOrEmpty(image.Name))
-                {
-                    image.Name = "Without a name";
-                }
+                
                 UpdateImageAsync(image);
             }            
         }
@@ -102,97 +99,35 @@ namespace WpfApp1
                     MessageBoxImage.Question) == MessageBoxResult.OK)
             {
                 Button button = (Button)sender;
-                string id = button.Name.ToString().Split("_")[1];
+                string id = button.Uid;
 
                 DeleteImageAsync(id);
             }           
         }
 
-        async Task<string> GetImagesAsync()
+        async Task GetImagesAsync()
         {      
             string path = "/api/images";
-            string jsonString = null;
 
             HttpResponseMessage response = await client.GetAsync(path);
 
-            jsonString = await response.Content.ReadAsStringAsync();
+            string jsonString = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
             {
                 MessageBox.Show("Status code: " + response.StatusCode.ToString() + ". Message: " + jsonString, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                return jsonString;
             }
-
-            images = JsonSerializer.Deserialize<List<MyImage>>(jsonString)!;
-
-            mainWrapPanel.Children.Clear();
-
-            for (int i = 0; i < images.Count; i++)
+            else
             {
-
-                byte[] binaryData = Convert.FromBase64String(images[i].Content);
-
-                BitmapImage bi = new BitmapImage();
-                bi.BeginInit();
-                bi.StreamSource = new MemoryStream(binaryData);
-                bi.EndInit();
-
-                WrapPanel wrapPanelForItem = new WrapPanel() { Orientation = Orientation.Vertical, Margin = new Thickness(20, 20, 20, 0) };
-
-                WrapPanel wrapPanelForButtons = new WrapPanel() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 5), HorizontalAlignment = HorizontalAlignment.Right };
-
-                Button editButton = new Button() { Content = "Edit", Height = 20, Width = 20, Background = System.Windows.Media.Brushes.White, BorderThickness = new Thickness(0) };
-                Button deleteButton = new Button() { Content = "Delete", Height = 20, Width = 20, Margin = new Thickness(10, 0, 0, 0), Background = System.Windows.Media.Brushes.White, BorderThickness = new Thickness(0) };
-
-                editButton.Content = new Image() { Source = editIcon, Height = 20, Width = 20, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
-                deleteButton.Content = new Image () { Source = deleteIcon, Height = 20, Width = 20,  VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
-
-                editButton.Name = "name_" + images[i].Id;
-                deleteButton.Name = "name_" + images[i].Id;
-
-                editButton.Click += EditButton_Click;
-                deleteButton.Click += DeleteButton_Click;
-
-                wrapPanelForButtons.Children.Add(editButton);
-                wrapPanelForButtons.Children.Add(deleteButton);
-
-                wrapPanelForItem.Children.Add(wrapPanelForButtons);
-
-                Border border = new Border() { BorderThickness = new Thickness(1), BorderBrush = System.Windows.Media.Brushes.White };
-                border.Child = new Image() { Source = bi, Height = 150, Width = 200, Stretch = Stretch.Fill };
-                wrapPanelForItem.Children.Add(border);
-
-                wrapPanelForItem.Children.Add(new Label() { Content = images[i].Name });
-                
-                mainWrapPanel.Children.Add(wrapPanelForItem);
-            }
-
-            return jsonString;
+                images = JsonSerializer.Deserialize<List<MyImage>>(jsonString)!;
+                displayImages(images);
+            }            
         }        
 
         async Task CreateImageAsync(MyImage myImage)
         {
             HttpResponseMessage response = await client.PostAsJsonAsync("/api/images", myImage);
 
-            HandleResponse(response);
-        }
-
-        async Task UpdateImageAsync(MyImage myImage)
-        {
-            HttpResponseMessage response = await client.PutAsJsonAsync($"/api/images/{myImage.Id}", myImage);
-
-            HandleResponse(response);
-        }
-
-        async Task DeleteImageAsync(string id)
-        {
-            HttpResponseMessage response = await client.DeleteAsync($"api/products/{id}");
-
-            HandleResponse(response);
-        }
-
-        private async void HandleResponse(HttpResponseMessage response)
-        {
             if (!response.IsSuccessStatusCode)
             {
                 string responseData = await response.Content.ReadAsStringAsync();
@@ -200,9 +135,67 @@ namespace WpfApp1
             }
             else
             {
-                GetImagesAsync();
+                string jsonString = await response.Content.ReadAsStringAsync();
+
+                MyImage? newImage = JsonSerializer.Deserialize<MyImage>(jsonString);
+
+                images.Add(newImage);
+
+                displayImages(images);
             }
         }
+
+        async Task UpdateImageAsync(MyImage myImage)
+        {
+            HttpResponseMessage response = await client.PutAsJsonAsync($"/api/images/{myImage.Id}", myImage);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string responseData = await response.Content.ReadAsStringAsync();
+                MessageBox.Show("Status code: " + response.StatusCode.ToString() + ". Message: " + responseData, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            else
+            {
+                string jsonString = await response.Content.ReadAsStringAsync();
+
+                MyImage? imageToUpdate = JsonSerializer.Deserialize<MyImage>(jsonString);
+
+                for (int i = 0; i < images.Count; i++)
+                {
+                    MyImage item = images[i];
+
+                    if (item.Id == imageToUpdate.Id)
+                    {
+                        item.Name = imageToUpdate.Name;
+                        item.Content = imageToUpdate.Content;
+                        break;
+                    }
+                }
+
+                displayImages(images);
+            }
+        }
+
+        async Task DeleteImageAsync(string id)
+        {
+            HttpResponseMessage response = await client.DeleteAsync($"api/products/{id}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string responseData = await response.Content.ReadAsStringAsync();
+                MessageBox.Show("Status code: " + response.StatusCode.ToString() + ". Message: " + responseData, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            else
+            {
+                string imageId = await response.Content.ReadAsStringAsync();
+
+                MyImage? imageToDelete = images.FirstOrDefault(image => image.Id == imageId);
+
+                bool f = images.Remove(imageToDelete);
+
+                displayImages(images);
+            }
+        }        
 
         private BitmapImage CreateBitmapImage(string path)
         {
@@ -225,11 +218,59 @@ namespace WpfApp1
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
+        private void displayImages(List<MyImage> images)
+        {
+            mainWrapPanel.Children.Clear();
+
+            for (int i = 0; i < images.Count; i++)
+            {
+
+                //MessageBox.Show(images[i].Name);
+
+                byte[] binaryData = Convert.FromBase64String(images[i].Content);
+
+                BitmapImage bi = new BitmapImage();
+                bi.BeginInit();
+                bi.StreamSource = new MemoryStream(binaryData);
+                bi.EndInit();
+
+                WrapPanel wrapPanelForItem = new WrapPanel() { Orientation = Orientation.Vertical, Margin = new Thickness(20, 20, 20, 0) };
+
+                WrapPanel wrapPanelForButtons = new WrapPanel() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 5), HorizontalAlignment = HorizontalAlignment.Right };
+
+                Button editButton = new Button() { Content = "Edit", Height = 20, Width = 20, Background = System.Windows.Media.Brushes.White, BorderThickness = new Thickness(0) };
+                Button deleteButton = new Button() { Content = "Delete", Height = 20, Width = 20, Margin = new Thickness(10, 0, 0, 0), Background = System.Windows.Media.Brushes.White, BorderThickness = new Thickness(0) };
+
+                editButton.Content = new Image() { Source = editIcon, Height = 20, Width = 20, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
+                deleteButton.Content = new Image() { Source = deleteIcon, Height = 20, Width = 20, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
+
+                editButton.Uid = images[i].Id;
+                deleteButton.Uid = images[i].Id;
+
+                editButton.Click += EditButton_Click;
+                deleteButton.Click += DeleteButton_Click;
+
+                wrapPanelForButtons.Children.Add(editButton);
+                wrapPanelForButtons.Children.Add(deleteButton);
+
+                wrapPanelForItem.Children.Add(wrapPanelForButtons);
+
+                Border border = new Border() { BorderThickness = new Thickness(1), BorderBrush = System.Windows.Media.Brushes.White };
+                border.Child = new Image() { Source = bi, Height = 150, Width = 200, Stretch = Stretch.Fill };
+                wrapPanelForItem.Children.Add(border);
+
+                wrapPanelForItem.Children.Add(new Label() { Content = images[i].Name });
+
+                mainWrapPanel.Children.Add(wrapPanelForItem);
+            }
+
+        }
+
         public class MyImage
         {
             public string Id { get; set; } = "";
             public string Name { get; set; } = "";
             public string Content { get; set; } = "";
-        }        
+        }
     }
 }
