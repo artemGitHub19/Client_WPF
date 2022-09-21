@@ -20,7 +20,7 @@
                 <ColumnDefinition></ColumnDefinition>
             </Grid.ColumnDefinitions>            
             <Button Grid.Column="0" Grid.Row="0" x:Name="ButtonAddNewImage" Content="Add New Image" HorizontalAlignment="Left" Margin="20,20,0,0" VerticalAlignment="Center" Height="25" Width="132"/>
-            <WrapPanel Grid.Column="0" Grid.Row="1" x:Name="wrapPanel1" />
+            <WrapPanel Grid.Column="0" Grid.Row="1" x:Name="mainWrapPanel" />
         </Grid>
 
     </ScrollViewer>

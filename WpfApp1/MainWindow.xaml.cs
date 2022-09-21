@@ -47,9 +47,7 @@ namespace WpfApp1
         {
             InitializeComponent();
 
-            client.BaseAddress = new Uri("https://localhost:7115/");
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));            
+            setClient();
 
             ButtonAddNewImage.Click += ButtonAddNewImage_Click;            
 
@@ -60,7 +58,7 @@ namespace WpfApp1
         }   
 
         private void ButtonAddNewImage_Click(object sender, RoutedEventArgs e)
-        {
+        {       
 
             MyImage newImage = new MyImage();
 
@@ -70,11 +68,7 @@ namespace WpfApp1
 
             if (result == true)
             {
-                newImage = dialog.image;
-                if (String.IsNullOrEmpty(newImage.Name))
-                {
-                    newImage.Name = "Without a name";
-                }
+                newImage = dialog.image;                
                 CreateImageAsync(newImage);
             }            
         }
@@ -82,8 +76,7 @@ namespace WpfApp1
         private void EditButton_Click(object sender, RoutedEventArgs e)
         {
             Button button = (Button)sender;
-            string stringId = button.Name.ToString().Split("_")[1];
-            int id = int.Parse(stringId);
+            string id = button.Name.ToString().Split("_")[1];            
 
             MyImage? image = images.FirstOrDefault((item) => item.Id == id);
 
@@ -132,7 +125,7 @@ namespace WpfApp1
 
             images = JsonSerializer.Deserialize<List<MyImage>>(jsonString)!;
 
-            wrapPanel1.Children.Clear();
+            mainWrapPanel.Children.Clear();
 
             for (int i = 0; i < images.Count; i++)
             {
@@ -144,9 +137,9 @@ namespace WpfApp1
                 bi.StreamSource = new MemoryStream(binaryData);
                 bi.EndInit();
 
-                WrapPanel wp = new WrapPanel() { Orientation = Orientation.Vertical, Margin = new Thickness(20, 20, 20, 0) };
+                WrapPanel wrapPanelForItem = new WrapPanel() { Orientation = Orientation.Vertical, Margin = new Thickness(20, 20, 20, 0) };
 
-                WrapPanel wp1 = new WrapPanel() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 5), HorizontalAlignment = HorizontalAlignment.Right };
+                WrapPanel wrapPanelForButtons = new WrapPanel() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 5), HorizontalAlignment = HorizontalAlignment.Right };
 
                 Button editButton = new Button() { Content = "Edit", Height = 20, Width = 20, Background = System.Windows.Media.Brushes.White, BorderThickness = new Thickness(0) };
                 Button deleteButton = new Button() { Content = "Delete", Height = 20, Width = 20, Margin = new Thickness(10, 0, 0, 0), Background = System.Windows.Media.Brushes.White, BorderThickness = new Thickness(0) };
@@ -160,19 +153,18 @@ namespace WpfApp1
                 editButton.Click += EditButton_Click;
                 deleteButton.Click += DeleteButton_Click;
 
-                wp1.Children.Add(editButton);
-                wp1.Children.Add(deleteButton);
+                wrapPanelForButtons.Children.Add(editButton);
+                wrapPanelForButtons.Children.Add(deleteButton);
 
-                wp.Children.Add(wp1);
+                wrapPanelForItem.Children.Add(wrapPanelForButtons);
 
                 Border border = new Border() { BorderThickness = new Thickness(1), BorderBrush = System.Windows.Media.Brushes.White };
                 border.Child = new Image() { Source = bi, Height = 150, Width = 200, Stretch = Stretch.Fill };
-                wp.Children.Add(border);
+                wrapPanelForItem.Children.Add(border);
 
-                wp.Children.Add(new Label() { Content = images[i].Name });
-
+                wrapPanelForItem.Children.Add(new Label() { Content = images[i].Name });
                 
-                wrapPanel1.Children.Add(wp);
+                mainWrapPanel.Children.Add(wrapPanelForItem);
             }
 
             return jsonString;
@@ -226,9 +218,16 @@ namespace WpfApp1
             return bitmapImage;
         }
 
+        private void setClient()
+        {
+            client.BaseAddress = new Uri("https://localhost:7115/");
+            client.DefaultRequestHeaders.Accept.Clear();
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        }
+
         public class MyImage
         {
-            public int Id { get; set; } = 0;
+            public string Id { get; set; } = "";
             public string Name { get; set; } = "";
             public string Content { get; set; } = "";
         }        
