@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
@@ -31,7 +33,14 @@ namespace WpfApp1
         {
             InitializeComponent();
 
-            image = imageToEdit;
+            image = imageToEdit;            
+
+            ChooseImage.Click += ChooseImage_Click;
+            
+            var nameBindingObject = new Binding("Name");            
+            nameBindingObject.Mode = BindingMode.TwoWay;
+            nameBindingObject.Source = image;          
+            BindingOperations.SetBinding(TextBoxName, TextBox.TextProperty, nameBindingObject);
 
             if (imageToEdit.Content != "")
             {
@@ -47,15 +56,9 @@ namespace WpfApp1
             else
             {
                 okButton.Visibility = Visibility.Hidden;
-                this.Title = "Create New Image";
+                this.Title = "Create";
+                ChooseImage_Click(null, null);                
             }
-
-            ChooseImage.Click += ChooseImage_Click;
-            
-            var nameBindingObject = new Binding("Name");            
-            nameBindingObject.Mode = BindingMode.TwoWay;
-            nameBindingObject.Source = image;          
-            BindingOperations.SetBinding(TextBoxName, TextBox.TextProperty, nameBindingObject);
         }
 
         private void ChooseImage_Click(object sender, RoutedEventArgs e)
@@ -82,6 +85,15 @@ namespace WpfApp1
                 Image1.Source = bi;
 
                 okButton.Visibility = Visibility.Visible;
+            } 
+            else
+            {
+                if (this.Title == "Create")
+                {
+                    ButtonAutomationPeer peer = new ButtonAutomationPeer(cancelButton);
+                    IInvokeProvider invokeProv = peer.GetPattern(PatternInterface.Invoke) as IInvokeProvider;
+                    invokeProv.Invoke();
+                }
             }
         }
 

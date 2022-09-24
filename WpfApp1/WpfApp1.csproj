@@ -8,7 +8,32 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="data\" />
+    <Compile Remove="data\**" />
+    <Compile Remove="Images\**" />
+    <Compile Remove="Resources\**" />
+    <EmbeddedResource Remove="data\**" />
+    <EmbeddedResource Remove="Images\**" />
+    <EmbeddedResource Remove="Resources\**" />
+    <None Remove="data\**" />
+    <None Remove="Images\**" />
+    <None Remove="Resources\**" />
+    <Page Remove="data\**" />
+    <Page Remove="Images\**" />
+    <Page Remove="Resources\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="icons\delete.png" />
+    <None Remove="icons\edit.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="icons\delete.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="icons\edit.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

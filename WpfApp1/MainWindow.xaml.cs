@@ -29,41 +29,119 @@ using System.Drawing;
 using System.Drawing.Printing;
 using System.Net;
 using System.Reflection;
+using System.Globalization;
+using System.Runtime.Intrinsics.X86;
+using System.Diagnostics;
+using System.Collections.Specialized;
 
 namespace WpfApp1
 {
+
+    public class RelayCommand : ICommand
+    {
+        private readonly Predicate<object> _canExecute;
+        private readonly Action<object> _execute;
+
+        public RelayCommand(Predicate<object> canExecute, Action<object> execute)
+        {
+            _canExecute = canExecute;
+            _execute = execute;
+        }
+
+        public event EventHandler CanExecuteChanged
+        {
+            add => CommandManager.RequerySuggested += value;
+            remove => CommandManager.RequerySuggested -= value;
+        }
+
+        public bool CanExecute(object parameter)
+        {
+            return _canExecute(parameter);
+        }
+
+        public void Execute(object parameter)
+        {
+            _execute(parameter);
+        }
+    }
+
+    public class DateTimeToDateConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            byte[] binaryData = System.Convert.FromBase64String((string)value);
+
+            BitmapImage bi = new BitmapImage();
+            bi.BeginInit();
+            bi.StreamSource = new MemoryStream(binaryData);
+            bi.EndInit();
+
+            return bi;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            return DependencyProperty.UnsetValue;
+        }
+    }
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
-    {       
-        List<MyImage> images = new List<MyImage>();
-        HttpClient client = new HttpClient();
+    {
+        public ObservableCollection<MyImage> items { get; set; }
 
-        BitmapImage editIcon;
-        BitmapImage deleteIcon;
+        public ICommand EditButtonCmd { get; }
+        public ICommand DeleteButtonCmd { get; }
+
+        List<MyImage> images = new List<MyImage>();
+        HttpClient client = new HttpClient();       
 
         public MainWindow()
         {
-            InitializeComponent();
-
+            InitializeComponent();  
             setClient();
 
-            ButtonAddNewImage.Click += ButtonAddNewImage_Click;            
+            AddNewImageButton.Click += AddNewImageButton_Click;
 
-            editIcon = CreateBitmapImage("data/editIcon.png");
-            deleteIcon = CreateBitmapImage("data/deleteIcon.png");
+            EditButtonCmd = new RelayCommand( o => true, EditButton_Click);
+            DeleteButtonCmd = new RelayCommand( o => true, DeleteButton_Click);
 
             GetImagesAsync();
-        }   
 
-        private void ButtonAddNewImage_Click(object sender, RoutedEventArgs e)
-        {       
+            DataContext = this;
+        }
 
+        private void EditButton_Click(object obj)
+        {
+            MyImage myImage = (MyImage)obj;
+            var dialog = new DialogEditItemWindow(myImage);
+            bool? result = dialog.ShowDialog();
+
+            if (result == true)
+            {                
+                UpdateImageAsync(dialog.image);
+            }
+        }
+
+        private void DeleteButton_Click(object obj)
+        {
+            MyImage myImage = (MyImage)obj;
+
+            if (MessageBox.Show("Are you sure you want to delete the image?",
+                    "Confirmation",
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Question) == MessageBoxResult.OK)
+            {  
+                DeleteImageAsync(myImage.Id);
+            }
+        }
+
+        private void AddNewImageButton_Click(object sender, RoutedEventArgs e)
+        {   
             MyImage newImage = new MyImage();
-
             var dialog = new DialogEditItemWindow(newImage);
-
             bool? result = dialog.ShowDialog();
 
             if (result == true)
@@ -71,39 +149,7 @@ namespace WpfApp1
                 newImage = dialog.image;                
                 CreateImageAsync(newImage);
             }            
-        }
-
-        private void EditButton_Click(object sender, RoutedEventArgs e)
-        {
-            Button button = (Button)sender;
-            string id = button.Uid;            
-
-            MyImage? image = images.FirstOrDefault((item) => item.Id == id);
-
-            var dialog = new DialogEditItemWindow(image);            
-            bool? result = dialog.ShowDialog();            
-
-            if (result == true)
-            {               
-                image = dialog.image;
-                
-                UpdateImageAsync(image);
-            }            
-        }
-
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
-        {            
-            if (MessageBox.Show("Are you sure you want to delete the image?",
-                    "Confirmation",
-                    MessageBoxButton.OKCancel,
-                    MessageBoxImage.Question) == MessageBoxResult.OK)
-            {
-                Button button = (Button)sender;
-                string id = button.Uid;
-
-                DeleteImageAsync(id);
-            }           
-        }
+        }        
 
         async Task GetImagesAsync()
         {      
@@ -119,8 +165,10 @@ namespace WpfApp1
             }
             else
             {
-                images = JsonSerializer.Deserialize<List<MyImage>>(jsonString)!;
-                displayImages(images);
+                images = JsonSerializer.Deserialize<List<MyImage>>(jsonString)!;                
+                items = new ObservableCollection<MyImage>(images);                
+
+                phonesList.ItemsSource = items;                
             }            
         }        
 
@@ -137,11 +185,9 @@ namespace WpfApp1
             {
                 string jsonString = await response.Content.ReadAsStringAsync();
 
-                MyImage? newImage = JsonSerializer.Deserialize<MyImage>(jsonString);
-
-                images.Add(newImage);
-
-                displayImages(images);
+                MyImage? newImage = JsonSerializer.Deserialize<MyImage>(jsonString); 
+                
+                items.Add(newImage);
             }
         }
 
@@ -160,19 +206,18 @@ namespace WpfApp1
 
                 MyImage? imageToUpdate = JsonSerializer.Deserialize<MyImage>(jsonString);
 
-                for (int i = 0; i < images.Count; i++)
-                {
-                    MyImage item = images[i];
+                for (int i = 0; i < items.Count; i++)
+                {                    
 
-                    if (item.Id == imageToUpdate.Id)
+                    if (items[i].Id == imageToUpdate.Id)
                     {
-                        item.Name = imageToUpdate.Name;
-                        item.Content = imageToUpdate.Content;
+                        items[i].Name = imageToUpdate.Name;
+                        items[i].Content = imageToUpdate.Content;
+
+                        phonesList.Items.Refresh();
                         break;
                     }
-                }
-
-                displayImages(images);
+                }                
             }
         }
 
@@ -189,27 +234,17 @@ namespace WpfApp1
             {
                 string imageId = await response.Content.ReadAsStringAsync();
 
-                MyImage? imageToDelete = images.FirstOrDefault(image => image.Id == imageId);
+                for (int i = 0; i < items.Count; i++)
+                {
 
-                bool f = images.Remove(imageToDelete);
-
-                displayImages(images);
+                    if (items[i].Id == imageId)
+                    {
+                        items.Remove(items[i]);
+                        break;
+                    }
+                }
             }
-        }        
-
-        private BitmapImage CreateBitmapImage(string path)
-        {
-            byte[] imageArray = System.IO.File.ReadAllBytes(path);
-            string base64ImageRepresentation = Convert.ToBase64String(imageArray);
-            byte[] binaryData = Convert.FromBase64String(base64ImageRepresentation);
-
-            BitmapImage bitmapImage = new BitmapImage();
-            bitmapImage.BeginInit();
-            bitmapImage.StreamSource = new MemoryStream(binaryData);
-            bitmapImage.EndInit();
-
-            return bitmapImage;
-        }
+        }  
 
         private void setClient()
         {
@@ -218,59 +253,11 @@ namespace WpfApp1
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
-        private void displayImages(List<MyImage> images)
-        {
-            mainWrapPanel.Children.Clear();
-
-            for (int i = 0; i < images.Count; i++)
-            {
-
-                //MessageBox.Show(images[i].Name);
-
-                byte[] binaryData = Convert.FromBase64String(images[i].Content);
-
-                BitmapImage bi = new BitmapImage();
-                bi.BeginInit();
-                bi.StreamSource = new MemoryStream(binaryData);
-                bi.EndInit();
-
-                WrapPanel wrapPanelForItem = new WrapPanel() { Orientation = Orientation.Vertical, Margin = new Thickness(20, 20, 20, 0) };
-
-                WrapPanel wrapPanelForButtons = new WrapPanel() { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 5), HorizontalAlignment = HorizontalAlignment.Right };
-
-                Button editButton = new Button() { Content = "Edit", Height = 20, Width = 20, Background = System.Windows.Media.Brushes.White, BorderThickness = new Thickness(0) };
-                Button deleteButton = new Button() { Content = "Delete", Height = 20, Width = 20, Margin = new Thickness(10, 0, 0, 0), Background = System.Windows.Media.Brushes.White, BorderThickness = new Thickness(0) };
-
-                editButton.Content = new Image() { Source = editIcon, Height = 20, Width = 20, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
-                deleteButton.Content = new Image() { Source = deleteIcon, Height = 20, Width = 20, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center };
-
-                editButton.Uid = images[i].Id;
-                deleteButton.Uid = images[i].Id;
-
-                editButton.Click += EditButton_Click;
-                deleteButton.Click += DeleteButton_Click;
-
-                wrapPanelForButtons.Children.Add(editButton);
-                wrapPanelForButtons.Children.Add(deleteButton);
-
-                wrapPanelForItem.Children.Add(wrapPanelForButtons);
-
-                Border border = new Border() { BorderThickness = new Thickness(1), BorderBrush = System.Windows.Media.Brushes.White };
-                border.Child = new Image() { Source = bi, Height = 150, Width = 200, Stretch = Stretch.Fill };
-                wrapPanelForItem.Children.Add(border);
-
-                wrapPanelForItem.Children.Add(new Label() { Content = images[i].Name });
-
-                mainWrapPanel.Children.Add(wrapPanelForItem);
-            }
-
-        }
-
-        public class MyImage
+        public class MyImage 
         {
             public string Id { get; set; } = "";
             public string Name { get; set; } = "";
-            public string Content { get; set; } = "";
-        }
+            public string Content { get; set; } = "";            
+        }        
     }
 }

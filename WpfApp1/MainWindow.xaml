@@ -6,10 +6,104 @@
         xmlns:local="clr-namespace:WpfApp1"
         mc:Ignorable="d"
         Title="MainWindow" 
-        Height="650" 
-        Width="1000">
-   
-    <ScrollViewer VerticalScrollBarVisibility="Auto" >
+        WindowState="Maximized">
+
+    <Window.Resources>        
+
+        <Style x:Key="BtnStyle" TargetType="Button">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid Background="{TemplateBinding Background}" Cursor="Hand">                            
+                            <ContentPresenter />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <local:DateTimeToDateConverter x:Key="myDateConverter" />
+        <DataTemplate x:Key="listTemplate">
+            <StackPanel Margin="5">                
+                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,5">
+
+                    <Button Height="20" Width="20" Margin="0,0,5,0" BorderThickness="0" Style="{StaticResource BtnStyle }" ToolTip="Edit"
+                            CommandParameter="{Binding}"                         
+                            Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBox}}, Path=DataContext.EditButtonCmd}"> 
+                        
+                        <Button.Background>
+                            <ImageBrush ImageSource="/Icons/edit.png" Stretch="Fill"></ImageBrush>
+                        </Button.Background>                        
+                    </Button>
+
+                    <Button Height="20" Width="20" Margin="0,0,5,0" BorderThickness="0" Style="{StaticResource BtnStyle }" ToolTip="Delete"
+                            CommandParameter="{Binding}"                         
+                            Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBox}}, Path=DataContext.DeleteButtonCmd}">
+                       
+                        <Button.Background>
+                            <ImageBrush ImageSource="/Icons/delete.png" Stretch="Fill"></ImageBrush>
+                        </Button.Background>
+                    </Button>     
+                    
+                </WrapPanel>
+                <Image Width="250" Height="150" Source="{Binding Path=Content, Converter={StaticResource myDateConverter}}" Stretch="Fill"/>
+                <TextBlock Text="{Binding Path=Name}" HorizontalAlignment="Center" />
+            </StackPanel>
+        </DataTemplate>       
+        
+    </Window.Resources>
+    
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" ></RowDefinition>
+                <RowDefinition Height="Auto" ></RowDefinition>
+            </Grid.RowDefinitions>
+
+            <Button Grid.Column="0" Grid.Row="0" Cursor="Hand" BorderThickness="0"
+                    x:Name="AddNewImageButton" 
+                    Content="Add New Image" 
+                    HorizontalAlignment="Left" 
+                    Margin="20,20,0,0"                     
+                    VerticalAlignment="Center" 
+                    Height="25" 
+                    Width="132"/>
+
+            <ListBox Grid.Column="0" Grid.Row="1" Margin="15,15,15,0" 
+                     x:Name="phonesList" ItemTemplate="{StaticResource listTemplate}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" Focusable="False" BorderThickness="0">
+                
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />  
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListBoxItem}">
+                        <Setter Property="IsSelected" Value="False" />
+                        <Setter Property="Margin" Value="5,5,5,0" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="{x:Type ListBoxItem}">
+                                    <Grid>
+                                        <Border Name="BackgroundBorder" Background="#EDEDED"  SnapsToDevicePixels="True"/>
+                                        <Border Name="Border">
+                                            <ContentPresenter />
+                                        </Border>
+                                    </Grid>                                    
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                
+            </ListBox>
+        </Grid>
+    </ScrollViewer>
+
+    <!--ScrollViewer VerticalScrollBarVisibility="Auto" >
         
         <Grid >
             <Grid.RowDefinitions>
@@ -19,9 +113,9 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition></ColumnDefinition>
             </Grid.ColumnDefinitions>            
-            <Button Grid.Column="0" Grid.Row="0" x:Name="ButtonAddNewImage" Content="Add New Image" HorizontalAlignment="Left" Margin="20,20,0,0" VerticalAlignment="Center" Height="25" Width="132"/>
+            <Button Grid.Column="0" Grid.Row="0" x:Name="AddNewImageButton" Content="Add New Image" HorizontalAlignment="Left" Margin="20,20,0,0" VerticalAlignment="Center" Height="25" Width="132"/>
             <WrapPanel Grid.Column="0" Grid.Row="1" x:Name="mainWrapPanel" />
         </Grid>
 
-    </ScrollViewer>
+    </ScrollViewer-->
 </Window>
