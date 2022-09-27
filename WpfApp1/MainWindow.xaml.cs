@@ -94,9 +94,14 @@ namespace WpfApp1
 
         public ICommand EditButtonCmd { get; }
         public ICommand DeleteButtonCmd { get; }
+        public ICommand CheckboxCmd { get; }        
 
         List<MyImage> images = new List<MyImage>();
-        HttpClient client = new HttpClient();       
+        HttpClient client = new HttpClient();
+
+        public List<string> idsToDelete = new List<string>();
+
+        bool isSortedByName = false;
 
         public MainWindow()
         {
@@ -104,13 +109,44 @@ namespace WpfApp1
             setClient();
 
             AddNewImageButton.Click += AddNewImageButton_Click;
+            DeleteSelectedImagesButton.Click += DeleteSelectedImagesButton_Click;
 
             EditButtonCmd = new RelayCommand( o => true, EditButton_Click);
             DeleteButtonCmd = new RelayCommand( o => true, DeleteButton_Click);
+            CheckboxCmd = new RelayCommand(o => true, Checkbox_Select);
 
             GetImagesAsync();
 
             DataContext = this;
+        }
+               
+
+        private void HandleFilterCheckboxCheck(object sender, RoutedEventArgs e)
+        {
+            isSortedByName = true;
+            phonesList.ItemsSource = items.OrderBy( item => item.Name); 
+        }
+
+        private void HandleFilterCheckboxUncheck(object sender, RoutedEventArgs e)
+        {
+            isSortedByName = false;
+            phonesList.ItemsSource = items;
+        }
+
+        private void Checkbox_Select(object obj)
+        {
+            MyImage myImage = (MyImage)obj;
+            
+            if (idsToDelete.Contains(myImage.Id))
+            {
+                idsToDelete.Remove(myImage.Id);
+            }
+            else
+            {
+                idsToDelete.Add(myImage.Id);
+            }
+
+            setVisibilityOfDeleteSelectedImagesButton(idsToDelete);
         }
 
         private void EditButton_Click(object obj)
@@ -149,6 +185,19 @@ namespace WpfApp1
                 newImage = dialog.image;                
                 CreateImageAsync(newImage);
             }            
+        }
+
+        private void DeleteSelectedImagesButton_Click(object sender, RoutedEventArgs e)
+        {            
+
+            if (MessageBox.Show("Are you sure you want to delete the image?",
+                    "Confirmation",
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Question) == MessageBoxResult.OK)
+            {
+                string combinedIds = string.Join("_", idsToDelete);
+                DeleteImageAsync(combinedIds);
+            }
         }        
 
         async Task GetImagesAsync()
@@ -185,9 +234,14 @@ namespace WpfApp1
             {
                 string jsonString = await response.Content.ReadAsStringAsync();
 
-                MyImage? newImage = JsonSerializer.Deserialize<MyImage>(jsonString); 
-                
+                MyImage? newImage = JsonSerializer.Deserialize<MyImage>(jsonString);
+
                 items.Add(newImage);
+
+                if (isSortedByName)
+                {                    
+                    phonesList.ItemsSource = items.OrderBy(item => item.Name);
+                } 
             }
         }
 
@@ -213,17 +267,22 @@ namespace WpfApp1
                     {
                         items[i].Name = imageToUpdate.Name;
                         items[i].Content = imageToUpdate.Content;
-
-                        phonesList.Items.Refresh();
                         break;
                     }
-                }                
+                }
+
+                if (isSortedByName)
+                {
+                    phonesList.ItemsSource = items.OrderBy(item => item.Name);
+                }
+
+                phonesList.Items.Refresh();
             }
         }
 
-        async Task DeleteImageAsync(string id)
+        async Task DeleteImageAsync(string ids)
         {
-            HttpResponseMessage response = await client.DeleteAsync($"api/products/{id}");
+            HttpResponseMessage response = await client.DeleteAsync($"api/products/{ids}");
 
             if (!response.IsSuccessStatusCode)
             {
@@ -232,19 +291,41 @@ namespace WpfApp1
             }
             else
             {
-                string imageId = await response.Content.ReadAsStringAsync();
+                string imageIdsString = await response.Content.ReadAsStringAsync();
+
+                List<string> idsOfDeletedItems = new List<string>(imageIdsString.Split("_"));
 
                 for (int i = 0; i < items.Count; i++)
                 {
-
-                    if (items[i].Id == imageId)
+                    if (idsOfDeletedItems.Contains(items[i].Id))
                     {
-                        items.Remove(items[i]);
-                        break;
+
+                        idsToDelete.Remove(items[i].Id);
+                        items.Remove(items[i]); 
+                        --i;
                     }
                 }
+
+                if (isSortedByName)
+                {
+                    phonesList.ItemsSource = items.OrderBy(item => item.Name);
+                }
+
+                setVisibilityOfDeleteSelectedImagesButton(idsToDelete);
             }
-        }  
+        }
+
+        private void setVisibilityOfDeleteSelectedImagesButton(List<string> idsToDelete)
+        {
+            if (idsToDelete.Count == 0)
+            {
+                DeleteSelectedImagesButton.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                DeleteSelectedImagesButton.Visibility = Visibility.Visible;
+            }
+        }
 
         private void setClient()
         {
@@ -257,7 +338,8 @@ namespace WpfApp1
         {
             public string Id { get; set; } = "";
             public string Name { get; set; } = "";
-            public string Content { get; set; } = "";            
+            public string Content { get; set; } = "";
+            public bool isChecked { get; set; } = false;            
         }        
     }
 }

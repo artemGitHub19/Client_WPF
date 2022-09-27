@@ -15,43 +15,68 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Grid Background="{TemplateBinding Background}" Cursor="Hand">                            
-                            <ContentPresenter />
+                        <Grid Name="gd" Cursor="Hand">
+                            <Grid Background="{TemplateBinding Background}" Cursor="Hand">
+                                <ContentPresenter />
+                            </Grid>
                         </Grid>
-                    </ControlTemplate>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="true">
+                                <Setter TargetName="gd" Property = "Background" Value="lightgray"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>                    
                 </Setter.Value>
             </Setter>
         </Style>
 
         <local:DateTimeToDateConverter x:Key="myDateConverter" />
         <DataTemplate x:Key="listTemplate">
-            <StackPanel Margin="5">                
-                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,5">
+            <StackPanel Margin="5">
 
-                    <Button Height="20" Width="20" Margin="0,0,5,0" BorderThickness="0" Style="{StaticResource BtnStyle }" ToolTip="Edit"
+                <Grid Margin="0,0,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition />
+                        <ColumnDefinition />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+
+                    <CheckBox   x:Name="cb1" 
+                                Grid.Row="0" Grid.Column="0"
+                                Height="20" Width="20" Margin="0,0,0,0"
+                                HorizontalAlignment="Left"
+                                Content="" 
+                                IsChecked="{Binding Path=isChecked}"
+                                CommandParameter="{Binding}"    
+                                Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBox}}, Path=DataContext.CheckboxCmd}"/>
+                    
+                    <WrapPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,5">
+
+                        <Button Height="20" Width="20" Margin="0,0,5,0" BorderThickness="0" Style="{StaticResource BtnStyle }" ToolTip="Edit"
                             CommandParameter="{Binding}"                         
-                            Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBox}}, Path=DataContext.EditButtonCmd}"> 
-                        
-                        <Button.Background>
-                            <ImageBrush ImageSource="/Icons/edit.png" Stretch="Fill"></ImageBrush>
-                        </Button.Background>                        
-                    </Button>
+                            Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBox}}, Path=DataContext.EditButtonCmd}">
 
-                    <Button Height="20" Width="20" Margin="0,0,5,0" BorderThickness="0" Style="{StaticResource BtnStyle }" ToolTip="Delete"
+                            <Button.Background>
+                                <ImageBrush ImageSource="/Icons/edit.png" Stretch="Fill"></ImageBrush>
+                            </Button.Background>
+                        </Button>
+
+                        <Button Height="20" Width="20" Margin="0,0,0,0" BorderThickness="0" Style="{StaticResource BtnStyle }" ToolTip="Delete"
                             CommandParameter="{Binding}"                         
                             Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBox}}, Path=DataContext.DeleteButtonCmd}">
-                       
-                        <Button.Background>
-                            <ImageBrush ImageSource="/Icons/delete.png" Stretch="Fill"></ImageBrush>
-                        </Button.Background>
-                    </Button>     
-                    
-                </WrapPanel>
+
+                            <Button.Background>
+                                <ImageBrush ImageSource="/Icons/delete.png" Stretch="Fill"></ImageBrush>
+                            </Button.Background>
+                        </Button>
+                    </WrapPanel>
+                </Grid> 
                 <Image Width="250" Height="150" Source="{Binding Path=Content, Converter={StaticResource myDateConverter}}" Stretch="Fill"/>
                 <TextBlock Text="{Binding Path=Name}" HorizontalAlignment="Center" />
             </StackPanel>
-        </DataTemplate>       
-        
+        </DataTemplate>  
     </Window.Resources>
     
     <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -61,14 +86,39 @@
                 <RowDefinition Height="Auto" ></RowDefinition>
             </Grid.RowDefinitions>
 
-            <Button Grid.Column="0" Grid.Row="0" Cursor="Hand" BorderThickness="0"
-                    x:Name="AddNewImageButton" 
-                    Content="Add New Image" 
-                    HorizontalAlignment="Left" 
-                    Margin="20,20,0,0"                     
-                    VerticalAlignment="Center" 
-                    Height="25" 
-                    Width="132"/>
+            <Grid Grid.Row="0" Grid.Column="0" Margin="20,20,20,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" ></RowDefinition>
+                </Grid.RowDefinitions>
+
+                <CheckBox   x:Name="filterCheckbox" 
+                            Grid.Row="0" Grid.Column="0"
+                            Margin="0,5,100,0" 
+                            Checked="HandleFilterCheckboxCheck" Unchecked="HandleFilterCheckboxUncheck"
+                            Content="Filter by Name"/>
+
+                <WrapPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,0">
+
+                    <Button Cursor="Hand" BorderThickness="0"
+                            x:Name="DeleteSelectedImagesButton" 
+                            Content="Delete"
+                            Margin="0,0,10,0"
+                            Visibility="Collapsed"
+                            Height="25" 
+                            Width="132"/>
+
+                    <Button Cursor="Hand" BorderThickness="0"
+                            x:Name="AddNewImageButton" 
+                            Content="Add New Image"
+                            Height="25" 
+                            Width="132"/>
+
+                </WrapPanel>
+            </Grid> 
 
             <ListBox Grid.Column="0" Grid.Row="1" Margin="15,15,15,0" 
                      x:Name="phonesList" ItemTemplate="{StaticResource listTemplate}"
@@ -83,7 +133,7 @@
                 <ListBox.ItemContainerStyle>
                     <Style TargetType="{x:Type ListBoxItem}">
                         <Setter Property="IsSelected" Value="False" />
-                        <Setter Property="Margin" Value="5,5,5,0" />
+                        <Setter Property="Margin" Value="5,10,5,0" />
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="{x:Type ListBoxItem}">
@@ -102,20 +152,4 @@
             </ListBox>
         </Grid>
     </ScrollViewer>
-
-    <!--ScrollViewer VerticalScrollBarVisibility="Auto" >
-        
-        <Grid >
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" ></RowDefinition>
-                <RowDefinition Height="Auto" ></RowDefinition>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition></ColumnDefinition>
-            </Grid.ColumnDefinitions>            
-            <Button Grid.Column="0" Grid.Row="0" x:Name="AddNewImageButton" Content="Add New Image" HorizontalAlignment="Left" Margin="20,20,0,0" VerticalAlignment="Center" Height="25" Width="132"/>
-            <WrapPanel Grid.Column="0" Grid.Row="1" x:Name="mainWrapPanel" />
-        </Grid>
-
-    </ScrollViewer-->
 </Window>
