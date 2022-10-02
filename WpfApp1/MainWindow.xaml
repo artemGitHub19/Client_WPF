@@ -47,7 +47,7 @@
                                 Grid.Row="0" Grid.Column="0"
                                 Height="20" Width="20" Margin="0,0,0,0"
                                 HorizontalAlignment="Left"
-                                Content="" 
+                                ToolTip="Select to delete"
                                 IsChecked="{Binding Path=isChecked}"
                                 CommandParameter="{Binding}"    
                                 Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBox}}, Path=DataContext.CheckboxCmd}"/>
@@ -55,8 +55,8 @@
                     <WrapPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,0,5">
 
                         <Button Height="20" Width="20" Margin="0,0,5,0" BorderThickness="0" Style="{StaticResource BtnStyle }" ToolTip="Edit"
-                            CommandParameter="{Binding}"                         
-                            Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBox}}, Path=DataContext.EditButtonCmd}">
+                                CommandParameter="{Binding}"                         
+                                Command="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListBox}}, Path=DataContext.EditButtonCmd}">
 
                             <Button.Background>
                                 <ImageBrush ImageSource="/Icons/edit.png" Stretch="Fill"></ImageBrush>
